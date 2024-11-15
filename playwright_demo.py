@@ -17,7 +17,7 @@ def execute_test(playwright, testObject, headless):
     failedStep = None
 
     # Launch browser in headless or non-headless mode based on the argument
-    browser = playwright.chromium.launch(headless=headless)
+    browser = playwright.chromium.launch(headless=True)
     page = browser.new_page()
 
     page.goto(testObject['startUrl'])
