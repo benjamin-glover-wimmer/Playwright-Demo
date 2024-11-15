@@ -4,15 +4,15 @@ trigger:
       - main 
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'  # Use Windows-based agent instead of Ubuntu
 
 steps:
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.x'
+    versionSpec: '3.x'  # Specify the Python version (you can change this if needed)
   displayName: 'Set up Python'
 
-- checkout: self 
+- checkout: self  # Ensure the repository is checked out
   displayName: 'Checkout Repository'
 
 - script: |
