@@ -1,0 +1,17 @@
+{
+    "id": 2,
+    "testName": "Wimmer Solutions Test 2",
+    "functionalUnit": "SecureConnect Services",
+    "startUrl": "https://www2.wimmersolutions.com/",
+    "startPageLoadObjects": ["#Home-Connect-Button"], 
+    "wait": 10000,
+    "steps": [
+        {
+            "name": "Navigate to Talk to Experts",
+            "action": "click", 
+            "object": "#Home-Connect-Button",
+            "PageLoadObjects": ["#Consultation-Name", "a[href='https://wimmersolutions.com/privacy-policy']"],
+            "wait": 10000
+        }
+    ]
+}
