@@ -1,0 +1,17 @@
+{
+  "name": "playwright-project",
+  "version": "1.0.0",
+  "description": "Playwright testing with TypeScript",
+  "main": "dist/playwright_test.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "node dist/playwright_test.js tests/test1.json tests/test2.json --headless"
+  },
+  "dependencies": {
+    "playwright": "^1.20.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.0",
+    "@types/node": "^16.0.0"
+  }
+}
