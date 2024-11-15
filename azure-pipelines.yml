@@ -32,4 +32,3 @@ steps:
     npx tsc  # Compile TypeScript to JavaScript
     node playwright_test.js tests/test1.json tests/test2.json --headless  # Run the compiled TypeScript file
   displayName: 'Compile and run TypeScript tests'
-  shell: pwsh  # Use PowerShell instead of Cmd.exe to avoid shell-related issues
