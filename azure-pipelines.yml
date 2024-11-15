@@ -4,26 +4,26 @@ trigger:
       - main 
 
 pool:
-  vmImage: 'windows-latest'  # Use Windows-based agent instead of Ubuntu
+  vmImage: 'windows-latest' 
 
 steps:
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.x'  # Specify the Python version (you can change this if needed)
+    versionSpec: '3.x' 
   displayName: 'Set up Python'
 
-- checkout: self  # Ensure the repository is checked out
+- checkout: self 
   displayName: 'Checkout Repository'
 
 - script: |
-    python -m pip install --upgrade pip  # Ensure pip is up-to-date
-    pip install -r requirements.txt  # Install dependencies from requirements.txt
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt 
   displayName: 'Install dependencies'
 
 - script: |
-    npx playwright install  # Install Playwright browser dependencies
+    npx playwright install
   displayName: 'Install Playwright browsers'
 
 - script: |
-    python playwright_demo.py tests/test1.json tests/test2.json  # Run Python script with JSON files
+    python playwright_demo.py tests/test1.json tests/test2.json 
   displayName: 'Run Python script with JSON files'
