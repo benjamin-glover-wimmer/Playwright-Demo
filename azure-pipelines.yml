@@ -1,10 +1,10 @@
 trigger:
   branches:
     include:
-      - main  # Adjust to your branch name
+      - main 
 
 pool:
-  vmImage: 'ubuntu-latest'  # Choose an appropriate VM image
+  vmImage: 'ubuntu-latest'
 
 steps:
 - task: UsePythonVersion@0
@@ -12,7 +12,7 @@ steps:
     versionSpec: '3.x'
   displayName: 'Set up Python'
 
-- checkout: self  # Ensure the repository is checked out
+- checkout: self 
   displayName: 'Checkout Repository'
 
 - script: |
