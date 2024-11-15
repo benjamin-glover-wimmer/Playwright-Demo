@@ -1,29 +1,35 @@
 trigger:
   branches:
     include:
-      - main =
+      - main
 
 pool:
-  vmImage: 'windows-latest' 
+  vmImage: 'windows-latest'
 
 steps:
 - task: UseNode@1
   inputs:
-    versionSpec: '16.x' 
+    versionSpec: '16.x'
   displayName: 'Set up Node.js'
 
-- checkout: self 
+- checkout: self
   displayName: 'Checkout Repository'
 
 - script: |
-    npm install  
+    node -v
+  displayName: 'Check Node.js Version'
+
+- script: |
+    npm install
   displayName: 'Install dependencies'
 
 - script: |
-    npx playwright install 
+    npm install playwright
+    npx playwright install
   displayName: 'Install Playwright browsers'
 
 - script: |
-    npx tsc  
-    node playwright_test.js tests/test1.json tests/test2.json --headless 
+    npx tsc
+    node playwright_test.js tests/test1.json tests/test2.json --headless
   displayName: 'Compile and run TypeScript tests'
+  shell: pwsh
