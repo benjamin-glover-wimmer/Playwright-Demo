@@ -1,0 +1,33 @@
+trigger:
+  branches:
+    include:
+      - main  # Adjust to your branch name
+
+pool:
+  vmImage: 'ubuntu-latest'  # You can change this to 'windows-latest' if needed
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'  # Set the Python version
+  displayName: 'Set up Python'
+
+- script: |
+    python -m pip install --upgrade pip  # Upgrade pip
+    pip install -r requirements.txt  # Install any necessary dependencies from your requirements file
+  displayName: 'Install dependencies'
+
+- checkout: self  # Ensure that the repository is checked out
+  displayName: 'Checkout Repository'
+
+- script: |
+    python my_script.py tests/test1.json tests/test2.json  # Run your Python script with two JSON files as inputs
+  displayName: 'Run Python script with JSON files'
+
+# Optionally publish test results if you are running tests
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '**/test-results/**/*.xml'  # Adjust path to your test result files
+    failTaskOnFailedTests: true
+  displayName: 'Publish Test Results'
