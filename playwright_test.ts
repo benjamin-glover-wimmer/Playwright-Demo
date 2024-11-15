@@ -29,17 +29,20 @@ const loadJsonArray = (filePath: string): TestObject => {
 const executeTest = async (testObject: TestObject, headless: boolean) => {
   let failedStep: string | null = null;
   const stepStatus: boolean[] = [];
-
+  console.log(`Starting test: ${testObject.testName}`);
+  
   // Launch the browser in headless or non-headless mode based on the argument
   const browser: Browser = await chromium.launch({ headless });
   const page: Page = await browser.newPage();
 
+  console.log(`Navigating to start URL: ${testObject.startUrl}`);
   await page.goto(testObject.startUrl);
 
   // Handle start page load objects
   const startLoads = await Promise.all(
     testObject.startPageLoadObjects.map(async (item) => {
       try {
+        console.log(`Waiting for selector: ${item.selector}`);
         await page.waitForSelector(item.selector, { timeout: testObject.wait });
         if (item.expectedContent) {
           const pageContent = await page.innerHTML(item.selector);
@@ -53,6 +56,7 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
         }
         return true;
       } catch (e) {
+        console.log(`Failed to load selector: ${item.selector}`);
         return false;
       }
     })
@@ -65,10 +69,14 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
   // Handle steps
   for (const step of testObject.steps) {
     const stepLoads: boolean[] = [];
+    console.log(`Step: ${step.name} - Action: ${step.action}`);
+
     if (step.action === 'click' && step.object) {
+      console.log(`Clicking on object: ${step.object}`);
       await page.click(step.object);
       for (const item of step.PageLoadObjects) {
         try {
+          console.log(`Waiting for selector: ${item.selector}`);
           await page.waitForSelector(item.selector, { timeout: step.wait });
           stepLoads.push(true);
 
@@ -83,6 +91,7 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
             }
           }
         } catch {
+          console.log(`Failed to find selector: ${item.selector}`);
           stepLoads.push(false);
           failedStep = step.name;
         }
@@ -90,9 +99,11 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
     }
 
     if (step.action === 'fetch' && step.url) {
+      console.log(`Navigating to URL: ${step.url}`);
       await page.goto(step.url);
       for (const item of step.PageLoadObjects) {
         try {
+          console.log(`Waiting for selector: ${item.selector}`);
           await page.waitForSelector(item.selector, { timeout: step.wait });
           stepLoads.push(true);
 
@@ -107,6 +118,7 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
             }
           }
         } catch {
+          console.log(`Failed to find selector: ${item.selector}`);
           stepLoads.push(false);
           failedStep = step.name;
         }
@@ -114,6 +126,7 @@ const executeTest = async (testObject: TestObject, headless: boolean) => {
     }
 
     if (step.action === 'input' && step.object && step.input) {
+      console.log(`Filling input for object: ${step.object} with value: ${step.input}`);
       await page.fill(step.object, step.input);
       stepLoads.push(true);
     }
