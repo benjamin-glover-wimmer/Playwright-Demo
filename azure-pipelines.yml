@@ -4,30 +4,26 @@ trigger:
       - main  # Adjust to your branch name
 
 pool:
-  vmImage: 'ubuntu-latest'  # You can change this to 'windows-latest' if needed
+  vmImage: 'ubuntu-latest'  # Choose an appropriate VM image
 
 steps:
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.x'  # Set the Python version
+    versionSpec: '3.x'
   displayName: 'Set up Python'
 
-- script: |
-    python -m pip install --upgrade pip  # Upgrade pip
-    pip install -r requirements.txt  # Install any necessary dependencies from your requirements file
-  displayName: 'Install dependencies'
-
-- checkout: self  # Ensure that the repository is checked out
+- checkout: self  # Ensure the repository is checked out
   displayName: 'Checkout Repository'
 
 - script: |
-    python my_script.py tests/test1.json tests/test2.json  # Run your Python script with two JSON files as inputs
-  displayName: 'Run Python script with JSON files'
+    python -m pip install --upgrade pip  # Ensure pip is up-to-date
+    pip install -r requirements.txt  # Install dependencies from requirements.txt
+  displayName: 'Install dependencies'
 
-# Optionally publish test results if you are running tests
-- task: PublishTestResults@2
-  inputs:
-    testResultsFormat: 'JUnit'
-    testResultsFiles: '**/test-results/**/*.xml'  # Adjust path to your test result files
-    failTaskOnFailedTests: true
-  displayName: 'Publish Test Results'
+- script: |
+    npx playwright install  # Install Playwright browser dependencies
+  displayName: 'Install Playwright browsers'
+
+- script: |
+    python my_script.py tests/test1.json tests/test2.json  # Run your Python script with JSON files
+  displayName: 'Run Python script with JSON files'
