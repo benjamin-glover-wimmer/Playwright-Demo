@@ -1,29 +1,29 @@
 trigger:
   branches:
     include:
-      - main 
+      - main =
 
 pool:
   vmImage: 'windows-latest' 
 
 steps:
-- task: UsePythonVersion@0
+- task: UseNode@1
   inputs:
-    versionSpec: '3.x' 
-  displayName: 'Set up Python'
+    versionSpec: '16.x' 
+  displayName: 'Set up Node.js'
 
 - checkout: self 
   displayName: 'Checkout Repository'
 
 - script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt 
+    npm install  
   displayName: 'Install dependencies'
 
 - script: |
-    npx playwright install
+    npx playwright install 
   displayName: 'Install Playwright browsers'
 
 - script: |
-    python playwright_demo.py tests/test1.json tests/test2.json 
-  displayName: 'Run Python script with JSON files'
+    npx tsc  
+    node playwright_test.js tests/test1.json tests/test2.json --headless 
+  displayName: 'Compile and run TypeScript tests'
