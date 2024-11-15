@@ -25,5 +25,5 @@ steps:
   displayName: 'Install Playwright browsers'
 
 - script: |
-    python playwright_demo.py tests/test1.json tests/test2.json  # Run your Python script with JSON files
+    python playwright_demo.py tests/test1.json tests/test2.json  # Run Python script with JSON files
   displayName: 'Run Python script with JSON files'
