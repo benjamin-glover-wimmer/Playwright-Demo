@@ -27,7 +27,8 @@ def execute_test(playwright, testObject, headless):
             page.wait_for_selector(item, timeout=testObject['wait'])
             startLoads.append(True)
             stepStatus.append(True)
-        except:
+        except exception as e:
+            print(e)
             startLoads.append(False)
             stepStatus.append(False)
             failedStep = testObject['testName']
