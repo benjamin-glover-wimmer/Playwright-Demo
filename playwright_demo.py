@@ -10,13 +10,14 @@ def load_json_array(file_path):
         data = json.load(file)
     return data
 
-def execute_test(playwright, testObject):
+def execute_test(playwright, testObject, headless):
     entry = {}
 
     stepStatus = []
     failedStep = None
 
-    browser = playwright.chromium.launch(headless=False)
+    # Launch browser in headless or non-headless mode based on the argument
+    browser = playwright.chromium.launch(headless=headless)
     page = browser.new_page()
 
     page.goto(testObject['startUrl'])
@@ -122,6 +123,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Execute Playwright tests with JSON input.')
     parser.add_argument('json_file1', help='Path to the first JSON file')
     parser.add_argument('json_file2', help='Path to the second JSON file')
+    parser.add_argument('--headless', action='store_true', help='Run tests in headless mode')  # New argument for headless mode
 
     args = parser.parse_args()
 
@@ -129,4 +131,5 @@ if __name__ == "__main__":
         # Load JSON files passed as arguments
         testObject = load_json_array(args.json_file1)
         print(testObject)
-        execute_test(playwright, testObject)
+        # Pass the --headless flag to control headless mode
+        execute_test(playwright, testObject, args.headless)
