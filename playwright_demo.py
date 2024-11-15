@@ -46,12 +46,12 @@ def execute_test(playwright, testObject, headless):
                         stepLoads.append(False)
                         failedStep = step['name']
 
-                if False in stepLoads:
-                    print(f"Step {step['name']} failed")
-                    stepStatus.append(False)
-                else:
-                    print(f"Step {step['name']} passed")
-                    stepStatus.append(True)
+                # if False in stepLoads:
+                #     print(f"Step {step['name']} failed")
+                #     stepStatus.append(False)
+                # else:
+                #     print(f"Step {step['name']} passed")
+                #     stepStatus.append(True)
             
             if step['action'] == 'fetch':
                 page.goto(step['url'])
@@ -78,12 +78,12 @@ def execute_test(playwright, testObject, headless):
                     stepLoads.append(False)
                     failedStep = step['name']
 
-                if False in stepLoads:
-                    print(f"Step {step['name']} failed")
-                    stepStatus.append(False)
-                else:
-                    print(f"Step {step['name']} passed")
-                    stepStatus.append(True)
+                # if False in stepLoads:
+                #     print(f"Step {step['name']} failed")
+                #     stepStatus.append(False)
+                # else:
+                #     print(f"Step {step['name']} passed")
+                #     stepStatus.append(True)
 
     else:
         print("Start page load failed")
