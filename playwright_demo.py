@@ -17,7 +17,7 @@ def execute_test(playwright, testObject, headless):
     failedStep = None
 
     # Launch browser in headless or non-headless mode based on the argument
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=headless)
     page = browser.new_page()
 
     page.goto(testObject['startUrl'])
@@ -88,6 +88,7 @@ def execute_test(playwright, testObject, headless):
     else:
         print("Start page load failed")
 
+    # Print the final test result
     if False not in stepStatus:
         entry = {
             "testName": testObject['testName'],
@@ -105,16 +106,13 @@ def execute_test(playwright, testObject, headless):
             "failedSteps": failedStep
         }
 
-    df = pd.DataFrame([entry])
-
-    file_exists = os.path.isfile('results.csv')
-
-    csv_file_path = 'results.csv'
-
-    if file_exists:
-        df.to_csv(csv_file_path, mode='a', header=False, index=False)
-    else:
-        df.to_csv(csv_file_path, mode='a', header=True, index=False)    
+    # Print the test results to console instead of saving them to CSV
+    print(f"Test Name: {entry['testName']}")
+    print(f"Test Status: {entry['testStatus']}")
+    print(f"Functional Unit: {entry['functionalUnit']}")
+    print(f"Test Time: {entry['testTime']}")
+    print(f"Failed Steps: {entry['failedSteps']}")
+    print("\n" + "="*40 + "\n")
 
     return 
 
@@ -129,7 +127,12 @@ if __name__ == "__main__":
 
     with sync_playwright() as playwright:
         # Load JSON files passed as arguments
-        testObject = load_json_array(args.json_file1)
-        print(testObject)
-        # Pass the --headless flag to control headless mode
-        execute_test(playwright, testObject, args.headless)
+        testObject1 = load_json_array(args.json_file1)
+        testObject2 = load_json_array(args.json_file2)
+
+        # Print the test objects for verification
+        print("Running Test 1:")
+        execute_test(playwright, testObject1, args.headless)
+        
+        print("Running Test 2:")
+        execute_test(playwright, testObject2, args.headless)
