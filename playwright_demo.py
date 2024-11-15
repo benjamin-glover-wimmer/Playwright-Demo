@@ -1,9 +1,9 @@
-from playwright.sync_api import sync_playwright
+import argparse
 import json
-from msal import ConfidentialClientApplication
 import os
 import datetime as dt
 import pandas as pd
+from playwright.sync_api import sync_playwright
 
 def load_json_array(file_path):
     with open(file_path, 'r') as file:
@@ -117,7 +117,16 @@ def execute_test(playwright, testObject):
 
     return 
 
-with sync_playwright() as playwright:
-    testObject = load_json_array('tests/test1.json')
-    print(testObject)
-    execute_test(playwright, testObject)
+if __name__ == "__main__":
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='Execute Playwright tests with JSON input.')
+    parser.add_argument('json_file1', help='Path to the first JSON file')
+    parser.add_argument('json_file2', help='Path to the second JSON file')
+
+    args = parser.parse_args()
+
+    with sync_playwright() as playwright:
+        # Load JSON files passed as arguments
+        testObject = load_json_array(args.json_file1)
+        print(testObject)
+        execute_test(playwright, testObject)
