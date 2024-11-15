@@ -24,7 +24,8 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    npm install typescript@4.4
+    npm install -g typescript@4.4
+    npm link typescript
     npm install playwright  
     npx playwright install  
   displayName: 'Install Playwright browsers'
