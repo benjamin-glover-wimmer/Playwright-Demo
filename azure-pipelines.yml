@@ -33,7 +33,7 @@ steps:
   displayName: 'Install Playwright and TypeScript'
 
 - script: |
-    npx tsc --noEmit  # Validate TypeScript without emitting files
+    npx tsc --noEmit
   displayName: 'Validate TypeScript'
 
 - script: |
