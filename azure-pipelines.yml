@@ -32,5 +32,8 @@ steps:
 
 - script: |
     npx tsc  
-    node playwright_test.js tests/test1.json tests/test2.json --headless 
-  displayName: 'Compile and run TypeScript tests'
+  displayName: 'Compile TypeScript'
+
+- script: |
+    npx ts-node playwright_test.ts tests/test1.json tests/test2.json --headless
+  displayName: 'Run Playwright Tests'
