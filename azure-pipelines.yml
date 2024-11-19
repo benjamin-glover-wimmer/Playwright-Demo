@@ -38,7 +38,7 @@ steps:
 
 - script: |
     npx tsc  # Compile TypeScript files to JavaScript
-    node dist/playwright_test.js tests/test1.json tests/test2.json --headless  # Run the compiled JavaScript file with the JSON files
+    node dist/playwright_test.js tests/test1.json tests/test2.json --headless
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
