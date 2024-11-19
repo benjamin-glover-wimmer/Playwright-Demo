@@ -9,6 +9,6 @@
     "types": ["node"], 
     "lib": ["ES2020", "DOM"] 
   },
-  "include": ["*.ts", "tests/**/*.ts"],
+  "include": ["*.ts"],
   "exclude": ["node_modules"]
 }
