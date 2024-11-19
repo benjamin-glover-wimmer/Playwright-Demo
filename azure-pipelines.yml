@@ -37,7 +37,7 @@ steps:
   displayName: 'Validate TypeScript'
 
 - script: |
-    npx playwright test tests/test1.json tests/test2.json --headed
+    npx playwright test tests/test1.json tests/test2.json
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
