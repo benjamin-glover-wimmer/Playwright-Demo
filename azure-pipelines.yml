@@ -38,7 +38,8 @@ steps:
 
 - script: |
     npx tsc 
-    node dist/playwright_test.js tests/test1.json tests/test2.json --headless
+    export DEBUG=pw:api
+    npx playwright playwright_test.ts tests/test1.json tests/test2.json --headless
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
