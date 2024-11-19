@@ -21,7 +21,7 @@ steps:
   displayName: 'Check Node.js and npm Versions'
 
 - script: |
-    npm ci  # Use npm ci for more reliable dependency installation
+    npm ci 
   displayName: 'Install dependencies'
 
 - script: |
@@ -37,7 +37,7 @@ steps:
   displayName: 'Validate TypeScript'
 
 - script: |
-    npx tsc  # Compile TypeScript files to JavaScript
+    npx tsc 
     node dist/playwright_test.js tests/test1.json tests/test2.json --headless
   displayName: 'Run Playwright Tests'
   continueOnError: true  
