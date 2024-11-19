@@ -1,6 +1,5 @@
-import { chromium, Page, Browser } from 'playwright';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import { chromium, Browser, Page } from 'playwright';
 
 interface TestObject {
   testName: string;
