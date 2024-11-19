@@ -39,14 +39,14 @@ steps:
 - script: |
     npx tsc 
     export DEBUG=pw:api
-    npx playwright playwright_test.ts tests/test1.json tests/test2.json --headless
+    npx playwright test --reporter=json --output=./  # Running Playwright tests with JSON output
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
-- task: PublishTestResults@2
+- task: PublishBuildArtifacts@1
   inputs:
-    testResultsFiles: '**/test-results.xml'
-    testRunTitle: 'Playwright Test Results'
+    PathtoPublish: 'test-results.json'
+    ArtifactName: 'test-results-json'
   condition: succeededOrFailed()
 
 - task: PublishBuildArtifacts@1
