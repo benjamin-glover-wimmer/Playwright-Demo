@@ -37,7 +37,8 @@ steps:
   displayName: 'Validate TypeScript'
 
 - script: |
-    npx playwright playwright_test.ts tests/test1.json tests/test2.json --headless
+    npx tsc  # Compile TypeScript files to JavaScript
+    node dist/playwright_test.js tests/test1.json tests/test2.json --headless  # Run the compiled JavaScript file with the JSON files
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
