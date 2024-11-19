@@ -7,9 +7,9 @@ pool:
   vmImage: 'windows-latest'
 
 steps:
-- task: NodeTool@0  # Use NodeTool instead of UseNode
+- task: NodeTool@0 
   inputs:
-    versionSpec: '18.x'  # Upgrade to Node 18
+    versionSpec: '18.x'  
   displayName: 'Set up Node.js'
 
 - checkout: self
@@ -39,7 +39,7 @@ steps:
 - script: |
     npx playwright test tests/test1.json tests/test2.json --headed
   displayName: 'Run Playwright Tests'
-  continueOnError: true  # Continue pipeline even if tests fail
+  continueOnError: true  
 
 - task: PublishTestResults@2
   inputs:
