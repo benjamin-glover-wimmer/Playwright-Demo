@@ -1,20 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
+    "target": "ES2018",
+    "module": "CommonJS",
+    "outDir": "dist",
     "strict": true,
-    "esModuleInterop": true,  // Enable esModuleInterop
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2020", "DOM"],
-    "outDir": "./dist",
-    "sourceMap": true
+    "esModuleInterop": true,
+    "skipLibCheck": true, 
+    "types": ["node"],  // Remove "playwright" from here
+    "lib": ["ES2018", "DOM"]  // Add this line
   },
-  "include": [
-    "src/**/*.ts",  
-    "*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules"]
 }
