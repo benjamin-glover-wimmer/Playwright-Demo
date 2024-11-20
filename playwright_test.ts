@@ -167,11 +167,12 @@ const runTests = async () => {
     console.log(`Running test from ${jsonFile}:`);
     const result = await executeTest(testObject, headless);
     testResults.push(result);
-  }
 
-  // Write results to a JSON file
-  fs.writeFileSync('test-results.json', JSON.stringify(testResults, null, 2), 'utf8');
-  console.log('Test results saved to test-results.json');
+    // Write results to a JSON file based on testName
+    const resultFileName = `${testObject.testName}-results.json`;
+    fs.writeFileSync(resultFileName, JSON.stringify([result], null, 2), 'utf8');
+    console.log(`Test results saved to ${resultFileName}`);
+  }
 };
 
 runTests();
