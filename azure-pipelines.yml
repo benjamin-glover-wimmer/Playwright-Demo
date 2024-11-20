@@ -21,7 +21,7 @@ steps:
   displayName: 'Check Node.js and npm Versions'
 
 - script: |
-    npm ci 
+    npm ci
   displayName: 'Install dependencies'
 
 - script: |
@@ -39,7 +39,7 @@ steps:
 - script: |
     npx tsc 
     export DEBUG=pw:api
-    npx playwright test --reporter=json --output=./ 
+    npx playwright test --reporter=json --output=./
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
