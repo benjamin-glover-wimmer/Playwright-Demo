@@ -50,8 +50,8 @@ steps:
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: './test-results/test-results.json'
-    ArtifactName: 'test-results-json'
+    PathtoPublish: './test-results'
+    ArtifactName: 'test-results'
   condition: succeededOrFailed()
 
 - task: PublishBuildArtifacts@1
