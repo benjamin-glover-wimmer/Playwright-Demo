@@ -37,20 +37,25 @@ steps:
   displayName: 'Validate TypeScript'
 
 - script: |
-    npx tsc 
-    export DEBUG=pw:api
-    npx playwright test --reporter=json --output=./
+    echo "Running Playwright tests..."
+    npx playwright test --reporter=json --output=./test-results
+    echo "Test results saved to ./test-results"
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
+- script: |
+    echo "Verifying test results..."
+    cat ./test-results/test-results.json
+  displayName: 'Verify Test Results File'
+
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'test-results.json'
+    PathtoPublish: './test-results/test-results.json'
     ArtifactName: 'test-results-json'
   condition: succeededOrFailed()
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'screenshots'
+    PathtoPublish: './screenshots'
     ArtifactName: 'test-screenshots'
   condition: succeededOrFailed()
