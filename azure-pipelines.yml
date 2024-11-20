@@ -39,7 +39,7 @@ steps:
 - script: |
     npx tsc 
     export DEBUG=pw:api
-    npx playwright test --reporter=json --output=./  # Running Playwright tests with JSON output
+    npx playwright test --reporter=json --output=./ 
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
