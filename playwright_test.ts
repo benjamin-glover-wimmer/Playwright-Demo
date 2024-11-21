@@ -6,7 +6,7 @@ interface TestObject {
   testName: string;
   functionalUnit: string;
   startUrl: string;
-  startPageLoadObjects: string[]; 
+  startPageLoadObjects: string[];
   wait: number;
   steps: Step[];
 }
@@ -19,12 +19,24 @@ interface Step {
   PageLoadObjects: string[];
   wait: number;
   input?: string;
+  expectedContent?: string | RegExp | ((content: string) => boolean);
 }
 
 interface TestResult {
   testName: string;
   status: 'passed' | 'failed';
 }
+
+// Utility function to check if a string is an integer
+const isInteger = (content: string): boolean => {
+  const parsed = parseInt(content, 10);
+  return !isNaN(parsed) && Number.isInteger(parsed);
+};
+
+// Utility function to check if a string is a valid number
+const isNumeric = (content: string): boolean => {
+  return !isNaN(parseFloat(content)) && isFinite(parseFloat(content));
+};
 
 const loadJsonArray = (filePath: string): TestObject => {
   try {
@@ -114,6 +126,36 @@ const handleStep = async (page: Page, step: Step): Promise<'passed' | 'failed'> 
     if (step.action === 'input' && step.object && step.input) {
       console.log(`Filling input for object: ${step.object} with value: ${step.input}`);
       await page.fill(step.object, step.input);
+    }
+
+    // Validate expected content if provided
+    if (step.expectedContent) {
+      for (const selector of step.PageLoadObjects) {
+        const element = page.locator(selector);
+        const textContent = await element.textContent();
+        if (textContent === null) {
+          console.error(`Element ${selector} not found or has no text content.`);
+          return 'failed';
+        }
+
+        const expected = step.expectedContent;
+        if (typeof expected === 'string') {
+          if (textContent !== expected) {
+            console.error(`Expected content "${expected}" not found in element ${selector}.`);
+            return 'failed';
+          }
+        } else if (expected instanceof RegExp) {
+          if (!expected.test(textContent)) {
+            console.error(`Content in element ${selector} does not match expected pattern.`);
+            return 'failed';
+          }
+        } else if (typeof expected === 'function') {
+          if (!expected(textContent)) {
+            console.error(`Content in element ${selector} does not satisfy the custom validation function.`);
+            return 'failed';
+          }
+        }
+      }
     }
 
     return 'passed';
