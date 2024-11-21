@@ -225,5 +225,3 @@ const runTests = async () => {
 };
 
 runTests();
-
-runTests();
