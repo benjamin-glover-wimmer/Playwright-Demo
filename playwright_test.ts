@@ -199,10 +199,11 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
   }
 };
 
-// Run tests and generate result files
 const runTests = async () => {
   const args = process.argv.slice(2);
-  const headless = args.includes('--headless=true') || process.env.headless === 'true';  // Check for headless flag
+
+  // Hardcoding headless to true
+  const headless = true;  // Set to true for headless mode
 
   const testFiles = args.filter(arg => !arg.startsWith('--headless'));  // Extract test files from arguments
   if (testFiles.length === 0) {
