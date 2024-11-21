@@ -7,8 +7,8 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  testFiles: "tests/test1.json"  
-  headless: "true"  
+  testFiles: "tests/test1.json,tests/test2.json"  # Add your test files here
+  headless: "true"  # Set to 'true' for headless mode, 'false' for non-headless
 
 steps:
 - task: NodeTool@0 
@@ -32,6 +32,7 @@ steps:
     npm install -D typescript@latest
     npm install -D playwright@latest
     npm install -D @types/node@latest
+    npx playwright install-deps
     npx playwright install
   displayName: 'Install Playwright and TypeScript'
 
