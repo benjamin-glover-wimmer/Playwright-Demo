@@ -53,7 +53,7 @@ const isNumeric = (value: string): boolean => {
 const validateContent = (
   content: string,
   validation: 'string' | 'integer' | 'numeric' | 'regex',
-  pattern?: string | RegExp
+  pattern?: string | RegExp | ((content: string) => boolean)
 ): boolean => {
   switch (validation) {
     case 'string':
@@ -67,7 +67,9 @@ const validateContent = (
         return pattern.test(content);
       } else if (typeof pattern === 'string') {
         const regex = new RegExp(pattern);
-        return regex.test(content);
+          return regex.test(content);
+        } else if (typeof pattern === 'function') {
+          return pattern(content);
       }
       return false;
     default:
@@ -153,7 +155,7 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
           if (validation && !validateContent(stepContent, validation, expectedContent)) {
             throw new Error(`Content in element ${selector} does not match expected validation.`);
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error(`Failed to validate selector: ${selector}`, e);
           stepResults.push({ name: step.name, status: 'failed', error: e.message });
           return 'failed';
@@ -179,7 +181,7 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
           if (validation && !validateContent(stepContent, validation, expectedContent)) {
             throw new Error(`Content in element ${selector} does not match expected validation.`);
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error(`Failed to validate selector: ${selector}`, e);
           stepResults.push({ name: step.name, status: 'failed', error: e.message });
           return 'failed';
@@ -188,7 +190,7 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
     }
 
     return 'passed';
-  } catch (e) {
+  } catch (e: any) {
     console.error(`Error in step ${step.name}:`, e);
     stepResults.push({ name: step.name, status: 'failed', error: e.message });
     return 'failed';
