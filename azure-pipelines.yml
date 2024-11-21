@@ -8,7 +8,6 @@ pool:
 
 variables:
   testFiles: "tests/test1.json"
-  headless: "true"  
 
 steps:
 - task: NodeTool@0 
@@ -44,7 +43,7 @@ steps:
 
 - script: |
     echo "Running tests..."
-    node dist/playwright_test.js $(testFiles) --headless=$(headless)
+    node dist/playwright_test.js $(testFiles)
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
