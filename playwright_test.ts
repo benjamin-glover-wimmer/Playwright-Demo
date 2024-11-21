@@ -202,9 +202,9 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
 // Run tests and generate result files
 const runTests = async () => {
   const args = process.argv.slice(2);
-  const headless = args.includes('--headless') || process.env.headless === 'true';  // Set headless from pipeline variable
-  const testFiles = args.filter(file => file !== '--headless');  // Get the test files from args
-  
+  const headless = args.includes('--headless=true') || process.env.headless === 'true';  // Check for headless flag
+
+  const testFiles = args.filter(arg => !arg.startsWith('--headless'));  // Extract test files from arguments
   if (testFiles.length === 0) {
     console.log('No test files provided. Exiting...');
     return;
@@ -223,5 +223,7 @@ const runTests = async () => {
     console.log(`Test results saved to ${resultFileName}`);
   }
 };
+
+runTests();
 
 runTests();
