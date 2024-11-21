@@ -2,6 +2,16 @@ import fs from 'fs';
 import { chromium, Browser, Page, Locator } from 'playwright';
 import path from 'path';
 
+const loadJsonArray = (filePath: string): TestObject => {
+  try {
+    const data = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(data) as TestObject;
+  } catch (error) {
+    console.error(`Error reading file ${filePath}:`, error);
+    throw error;
+  }
+};
+
 // Interfaces
 interface SelectorObject {
   selector: string;
