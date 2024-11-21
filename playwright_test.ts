@@ -8,13 +8,15 @@ interface TestObject {
   testName: string;
   functionalUnit: string;
   startUrl: string;
-  startPageLoadObjects: Array<{
-    selector: string;
-    index?: number;
-    wait?: number;
-  }>;
+  startPageLoadObjects: StartPageLoadObject[];
   wait: number;
   steps: Step[];
+}
+
+interface StartPageLoadObject {
+  selector: string;
+  index?: number;
+  wait?: number;
 }
 
 interface Step {
@@ -56,7 +58,7 @@ const isInteger = (value: string): boolean => {
 };
 
 const isNumeric = (value: string): boolean => {
-  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value));
+  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value as any));
 };
 
 const validateContent = (
@@ -168,7 +170,12 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
     // Handle start page load objects
     for (const selectorObj of testObject.startPageLoadObjects) {
       try {
+        console.log(`selectorObj: ${JSON.stringify(selectorObj)}`);
+        if (typeof selectorObj.selector !== 'string') {
+          throw new Error(`Invalid selector in startPageLoadObjects. Expected string, got ${typeof selectorObj.selector}`);
+        }
         const selector = selectorObj.selector;
+        console.log(`Type of selectorObj.selector: ${typeof selectorObj.selector}`);
         console.log(`Waiting for start page selector: ${selector}`);
         const element = await getElementByIndex(page, selectorObj);
         await element.waitFor({ state: 'visible', timeout: selectorObj.wait || testObject.wait });
@@ -197,17 +204,21 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
           const selectorObj = step.object;
           let element;
           if (typeof selectorObj === 'string') {
-            console.log(`Clicking on selector: ${selectorObj}`);
+            console.log(`Clicking on selector (string): ${selectorObj}`);
             element = await page.$(selectorObj);
             if (!element) {
               throw new Error(`Element not found for selector: ${selectorObj}`);
             }
             await element.click();
-          } else {
-            console.log(`Clicking on selector: ${selectorObj.selector}`);
+          } else if (typeof selectorObj === 'object' && typeof selectorObj.selector === 'string') {
+            console.log(`Clicking on selector (object): ${selectorObj.selector}`);
+            console.log(`selectorObj: ${JSON.stringify(selectorObj)}`);
             element = await getElementByIndex(page, selectorObj);
             await element.waitFor({ state: 'visible', timeout: step.wait });
             await element.click();
+          } else {
+            console.error(`Invalid selectorObj in step "${step.name}":`, selectorObj);
+            throw new Error(`Invalid selectorObj. Expected a string or an object with a selector string.`);
           }
         }
         if (step.action === 'fetch' && step.url) {
@@ -221,8 +232,12 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
         // Verify page load objects
         for (const obj of step.PageLoadObjects) {
           try {
+            if (typeof obj.selector !== 'string') {
+              throw new Error(`Invalid selector in PageLoadObjects. Expected string, got ${typeof obj.selector}`);
+            }
             const selector = obj.selector;
             console.log(`Waiting for selector: ${selector}`);
+            console.log(`obj: ${JSON.stringify(obj)}`);
             const element = await getElementByIndex(page, obj);
             await element.waitFor({
               state: 'visible',
