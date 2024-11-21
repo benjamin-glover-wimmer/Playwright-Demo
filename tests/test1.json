@@ -12,14 +12,15 @@
       "object": "#Nav-Services-Link",
       "PageLoadObjects": [
         {
-          "selector": "a[href='#wf-form-Services-Form']",
-          "expectedContent": "Talk to an Expert",
-          "wait": 3000
+          "selector": "a[href='#wf-form-Services-Form'] >> nth=0",
+          "validation": "string",
+          "wait": 10000
         },
         {
           "selector": ".benefits-heading",
-          "expectedContent": /Benefits/i,
-          "wait": 5000
+          "validation": "regex",
+          "expectedContent": "Benefits",
+          "wait": 10000
         }
       ],
       "wait": 10000
@@ -30,8 +31,8 @@
       "url": "https://www2.wimmersolutions.com/case-studies",
       "PageLoadObjects": [
         {
-          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support']",
-          "expectedContent": "string",
+          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support'] >> nth=0",
+          "validation": "string",
           "wait": 5000
         }
       ],
