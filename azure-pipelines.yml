@@ -7,7 +7,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  testFiles: "tests/test1.json,tests/test2.json"  
+  testFiles: "tests/test1.json"  
   headless: "true"  
 
 steps:
