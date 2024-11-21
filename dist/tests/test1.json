@@ -1,0 +1,53 @@
+{
+  "id": 1,
+  "testName": "Wimmer Solutions Test 1",
+  "functionalUnit": "SecureConnect DDA",
+  "startUrl": "https://www2.wimmersolutions.com/",
+  "startPageLoadObjects": [
+    {
+      "selector": "#Nav-Services-Link",
+      "index": 0
+    }
+  ],
+  "wait": 30000,
+  "steps": [
+    {
+      "name": "Navigate to Services",
+      "action": "click",
+      "object": {
+        "selector": "#Nav-Services-Link",
+        "index": 0
+      },
+      "PageLoadObjects": [
+        {
+          "selector": "#wf-form-Services-Form",
+          "validation": "string",
+          "wait": 30000,
+          "index": 0
+        },
+        {
+          "selector": ".benefits-heading",
+          "expectedContent": "Benefits",
+          "validation": "string",
+          "wait": 30000,
+          "index": 0
+        }
+      ],
+      "wait": 30000
+    },
+    {
+      "name": "Navigate to Case Studies",
+      "action": "fetch",
+      "url": "https://www2.wimmersolutions.com/case-studies",
+      "PageLoadObjects": [
+        {
+          "selector": ".case-studies-grid a",
+          "validation": "string",
+          "wait": 30000,
+          "index": 0
+        }
+      ],
+      "wait": 30000
+    }
+  ]
+}
