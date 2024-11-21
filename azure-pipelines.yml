@@ -32,7 +32,6 @@ steps:
     npm install -D typescript@latest
     npm install -D playwright@latest
     npm install -D @types/node@latest
-    npx playwright install-deps
     npx playwright install
   displayName: 'Install Playwright and TypeScript'
 
