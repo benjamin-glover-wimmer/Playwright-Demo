@@ -19,7 +19,7 @@
         {
           "selector": ".benefits-heading",
           "validation": "regex",
-          "expectedContent": "Benefits",
+          "pattern": "Benefits",
           "wait": 10000
         }
       ],
