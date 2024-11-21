@@ -7,8 +7,8 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  testFiles: "tests/test1.json,tests/test2.json"  # Add your test files here
-  headless: "true"  # Set to 'true' for headless mode, 'false' for non-headless
+  testFiles: "tests/test1.json,tests/test2.json"  
+  headless: "true"  
 
 steps:
 - task: NodeTool@0 
