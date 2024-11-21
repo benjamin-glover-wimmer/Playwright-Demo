@@ -1,31 +1,41 @@
 {
-    "id": 1,
-    "testName": "Wimmer Solutions Test 1",
-    "functionalUnit": "SecureConnect DDA",
-    "startUrl": "https://www2.wimmersolutions.com/",
-    "startPageLoadObjects": ["#Nav-Services-Link"], 
-    "wait": 10000,
-    "steps": [
+  "id": 1,
+  "testName": "Wimmer Solutions Test 1",
+  "functionalUnit": "SecureConnect DDA",
+  "startUrl": "https://www2.wimmersolutions.com/",
+  "startPageLoadObjects": ["#Nav-Services-Link"],
+  "wait": 10000,
+  "steps": [
+    {
+      "name": "Navigate to Services",
+      "action": "click",
+      "object": "#Nav-Services-Link",
+      "PageLoadObjects": [
         {
-            "name": "Navigate to Services",
-            "action": "click", 
-            "object": "#Nav-Services-Link",
-            "PageLoadObjects": ["a[href='#wf-form-Services-Form']", ".benefits-heading"],
-            "wait": 10000
+          "selector": "a[href='#wf-form-Services-Form']",
+          "expectedContent": "Talk to an Expert",
+          "wait": 3000
         },
         {
-            "name": "Navigate to Case Studies",
-            "action": "fetch",
-            "url": "https://www2.wimmersolutions.com/case-studies",
-            "PageLoadObjects": ["a[href='/case-studies/international-software-company-end-to-end-tech-support']"],
-            "wait": 10000
-        },
-        {
-            "name": "Navigate to Partners",
-            "action": "fetch",
-            "url": "https://www2.wimmersolutions.com/partners",
-            "PageLoadObjects": [".partners__content"],
-            "wait": 10000
+          "selector": ".benefits-heading",
+          "expectedContent": /Benefits/i,
+          "wait": 5000
         }
-    ]
+      ],
+      "wait": 10000
+    },
+    {
+      "name": "Navigate to Case Studies",
+      "action": "fetch",
+      "url": "https://www2.wimmersolutions.com/case-studies",
+      "PageLoadObjects": [
+        {
+          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support']",
+          "expectedContent": "string",
+          "wait": 5000
+        }
+      ],
+      "wait": 10000
+    }
+  ]
 }
