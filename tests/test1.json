@@ -12,7 +12,7 @@
       "object": "#Nav-Services-Link",
       "PageLoadObjects": [
         {
-          "selector": "a[href='#wf-form-Services-Form'] >> nth=0",
+          "selector": "a[href='#wf-form-Services-Form']",
           "validation": "string",
           "wait": 10000
         },
@@ -31,7 +31,7 @@
       "url": "https://www2.wimmersolutions.com/case-studies",
       "PageLoadObjects": [
         {
-          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support'] >> nth=0",
+          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support']",
           "validation": "string",
           "wait": 5000
         }
