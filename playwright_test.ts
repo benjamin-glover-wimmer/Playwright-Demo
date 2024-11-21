@@ -16,10 +16,13 @@ interface Step {
   action: 'click' | 'fetch' | 'input';
   object?: string;
   url?: string;
-  PageLoadObjects: string[];
+  PageLoadObjects: Array<{
+    selector: string;
+    expectedContent?: string | RegExp | ((content: string) => boolean);
+    wait?: number;
+  }>;
   wait: number;
   input?: string;
-  expectedContent?: string | RegExp | ((content: string) => boolean);
 }
 
 interface TestResult {
@@ -27,15 +30,27 @@ interface TestResult {
   status: 'passed' | 'failed';
 }
 
-// Utility function to check if a string is an integer
 const isInteger = (content: string): boolean => {
   const parsed = parseInt(content, 10);
   return !isNaN(parsed) && Number.isInteger(parsed);
 };
 
-// Utility function to check if a string is a valid number
 const isNumeric = (content: string): boolean => {
   return !isNaN(parseFloat(content)) && isFinite(parseFloat(content));
+};
+
+const validateContent = (
+  content: string,
+  expected: string | RegExp | ((content: string) => boolean)
+): boolean => {
+  if (typeof expected === 'string') {
+    return content === expected;
+  } else if (expected instanceof RegExp) {
+    return expected.test(content);
+  } else if (typeof expected === 'function') {
+    return expected(content);
+  }
+  return false;
 };
 
 const loadJsonArray = (filePath: string): TestObject => {
@@ -98,10 +113,22 @@ const handleStep = async (page: Page, step: Step): Promise<'passed' | 'failed'> 
     if (step.action === 'click' && step.object) {
       console.log(`Clicking on object: ${step.object}`);
       await page.click(step.object);
-      for (const selector of step.PageLoadObjects) {
+      for (const { selector, expectedContent, wait } of step.PageLoadObjects) {
         try {
           console.log(`Waiting for selector: ${selector}`);
-          await page.waitForSelector(selector, { timeout: step.wait, state: 'visible' });
+          await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
+          if (expectedContent) {
+            const element = page.locator(selector);
+            const textContent = await element.textContent();
+            if (textContent === null) {
+              console.error(`Element ${selector} not found or has no text content.`);
+              return 'failed';
+            }
+            if (!validateContent(textContent, expectedContent)) {
+              console.error(`Content in element ${selector} does not match expected.`);
+              return 'failed';
+            }
+          }
         } catch (e) {
           console.error(`Failed to find selector: ${selector}`, e);
           return 'failed';
@@ -112,10 +139,22 @@ const handleStep = async (page: Page, step: Step): Promise<'passed' | 'failed'> 
     if (step.action === 'fetch' && step.url) {
       console.log(`Navigating to URL: ${step.url}`);
       await page.goto(step.url, { waitUntil: 'networkidle' });
-      for (const selector of step.PageLoadObjects) {
+      for (const { selector, expectedContent, wait } of step.PageLoadObjects) {
         try {
           console.log(`Waiting for selector: ${selector}`);
-          await page.waitForSelector(selector, { timeout: step.wait, state: 'visible' });
+          await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
+          if (expectedContent) {
+            const element = page.locator(selector);
+            const textContent = await element.textContent();
+            if (textContent === null) {
+              console.error(`Element ${selector} not found or has no text content.`);
+              return 'failed';
+            }
+            if (!validateContent(textContent, expectedContent)) {
+              console.error(`Content in element ${selector} does not match expected.`);
+              return 'failed';
+            }
+          }
         } catch (e) {
           console.error(`Failed to find selector: ${selector}`, e);
           return 'failed';
@@ -126,36 +165,6 @@ const handleStep = async (page: Page, step: Step): Promise<'passed' | 'failed'> 
     if (step.action === 'input' && step.object && step.input) {
       console.log(`Filling input for object: ${step.object} with value: ${step.input}`);
       await page.fill(step.object, step.input);
-    }
-
-    // Validate expected content if provided
-    if (step.expectedContent) {
-      for (const selector of step.PageLoadObjects) {
-        const element = page.locator(selector);
-        const textContent = await element.textContent();
-        if (textContent === null) {
-          console.error(`Element ${selector} not found or has no text content.`);
-          return 'failed';
-        }
-
-        const expected = step.expectedContent;
-        if (typeof expected === 'string') {
-          if (textContent !== expected) {
-            console.error(`Expected content "${expected}" not found in element ${selector}.`);
-            return 'failed';
-          }
-        } else if (expected instanceof RegExp) {
-          if (!expected.test(textContent)) {
-            console.error(`Content in element ${selector} does not match expected pattern.`);
-            return 'failed';
-          }
-        } else if (typeof expected === 'function') {
-          if (!expected(textContent)) {
-            console.error(`Content in element ${selector} does not satisfy the custom validation function.`);
-            return 'failed';
-          }
-        }
-      }
     }
 
     return 'passed';
