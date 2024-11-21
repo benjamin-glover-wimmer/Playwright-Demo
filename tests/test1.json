@@ -44,7 +44,7 @@
           "selector": ".case-studies-grid a",
           "validation": "string",
           "wait": 30000,
-          "index": 0  // Will select the first case study link
+          "index": 0
         }
       ],
       "wait": 30000
