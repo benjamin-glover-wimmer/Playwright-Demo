@@ -48,6 +48,33 @@ interface TestResult {
   steps: StepResult[];
 }
 
+// Helper function to get selector string from object or string
+function getSelectorString(selectorObj: string | SelectorObject): string {
+  if (typeof selectorObj === 'string') {
+    return selectorObj;
+  }
+  return selectorObj.selector;
+}
+
+// Helper function to handle indexed element selection
+async function getElementByIndex(page: Page, selectorObj: string | SelectorObject): Promise<Locator> {
+  const selector = getSelectorString(selectorObj);
+  const index = typeof selectorObj === 'object' ? selectorObj.index || 0 : 0;
+  
+  const elements = page.locator(selector);
+  const count = await elements.count();
+  
+  if (count === 0) {
+    throw new Error(`No elements found for selector: ${selector}`);
+  }
+  
+  if (index >= count) {
+    throw new Error(`Index ${index} is out of bounds. Only ${count} elements found for selector: ${selector}`);
+  }
+  
+  return elements.nth(index);
+}
+
 // Validation Functions
 const isInteger = (value: string): boolean => {
   const parsed = parseInt(value, 10);
@@ -85,50 +112,6 @@ const validateContent = (
   }
 };
 
-// Helper function to handle indexed element selection
-async function getElementByIndex(page: Page, selectorObj: string | SelectorObject): Promise<Locator> {
-  if (typeof selectorObj === 'string') {
-    return page.locator(selectorObj).first();
-  }
-  
-  const { selector, index = 0 } = selectorObj;
-  const elements = page.locator(selector);
-  const count = await elements.count();
-  
-  if (count === 0) {
-    throw new Error(`No elements found for selector: ${selector}`);
-  }
-  
-  if (index >= count) {
-    throw new Error(`Index ${index} is out of bounds. Only ${count} elements found for selector: ${selector}`);
-  }
-  
-  return elements.nth(index);
-}
-
-// Load JSON test files
-const loadJsonArray = (filePath: string): TestObject => {
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(data) as TestObject;
-  } catch (error) {
-    console.error(`Error reading file ${filePath}:`, error);
-    throw error;
-  }
-};
-
-// Function to take screenshots
-async function takeScreenshot(page: Page, name: string) {
-  const screenshotPath = path.join(process.cwd(), 'screenshots');
-  if (!fs.existsSync(screenshotPath)) {
-    fs.mkdirSync(screenshotPath);
-  }
-  await page.screenshot({ 
-    path: path.join(screenshotPath, `${name}.png`),
-    fullPage: true 
-  });
-}
-
 // Function to validate page content
 async function validatePageContent(
   element: Locator,
@@ -136,7 +119,6 @@ async function validatePageContent(
 ): Promise<{ isValid: boolean; error?: string }> {
   const content = await element.textContent() || '';
   
-  // First check expected content if specified
   if (obj.expectedContent && !content.includes(obj.expectedContent.toString())) {
     return {
       isValid: false,
@@ -144,7 +126,6 @@ async function validatePageContent(
     };
   }
 
-  // Then perform validation if specified
   if (obj.validation) {
     const isValid = validateContent(content, obj.validation, obj.validationPattern);
     if (!isValid) {
@@ -185,17 +166,19 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
     // Handle start page load objects
     for (const selectorObj of testObject.startPageLoadObjects) {
       try {
+        const selector = getSelectorString(selectorObj);
+        console.log(`Waiting for start page selector: ${selector}`);
         const element = await getElementByIndex(page, selectorObj);
-        console.log(`Waiting for start page selector: ${typeof selectorObj === 'string' ? selectorObj : selectorObj.selector}`);
         await element.waitFor({ state: 'visible', timeout: testObject.wait });
-        console.log(`Found selector: ${typeof selectorObj === 'string' ? selectorObj : selectorObj.selector}`);
+        console.log(`Found selector: ${selector}`);
       } catch (e: any) {
-        const error = `Failed to find start page selector: ${typeof selectorObj === 'string' ? selectorObj : selectorObj.selector} - ${e.message}`;
+        const selector = getSelectorString(selectorObj);
+        const error = `Failed to find start page selector: ${selector} - ${e.message}`;
         console.error(error);
-        await takeScreenshot(page, `error-${testObject.testName}-start`);
+        if (page) await takeScreenshot(page, `error-${testObject.testName}-start`);
         overallStatus = 'failed';
         stepResults.push({ 
-          name: `Initial Load - ${typeof selectorObj === 'string' ? selectorObj : selectorObj.selector}`, 
+          name: `Initial Load - ${selector}`, 
           status: 'failed', 
           error 
         });
@@ -210,9 +193,10 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
         const validationErrors: string[] = [];
         
         if (step.action === 'click' && step.object) {
+          const selector = getSelectorString(step.object);
+          console.log(`Clicking on selector: ${selector}`);
           const element = await getElementByIndex(page, step.object);
           await element.waitFor({ state: 'visible', timeout: step.wait });
-          console.log(`Clicking on object: ${typeof step.object === 'string' ? step.object : step.object.selector}`);
           await element.click();
         }
         
@@ -224,11 +208,12 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
           });
         }
 
-        // Verify page load objects with validation
+        // Verify page load objects
         for (const obj of step.PageLoadObjects) {
           try {
+            const selector = getSelectorString(obj);
+            console.log(`Waiting for selector: ${selector}`);
             const element = await getElementByIndex(page, obj);
-            console.log(`Waiting for selector: ${obj.selector}`);
             await element.waitFor({ 
               state: 'visible',
               timeout: obj.wait || step.wait 
@@ -255,7 +240,7 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
       } catch (e: any) {
         const error = `Step ${step.name} failed: ${e.message}`;
         console.error(error);
-        await takeScreenshot(page, `error-${testObject.testName}-${step.name}`);
+        if (page) await takeScreenshot(page, `error-${testObject.testName}-${step.name}`);
         stepResults.push({ 
           name: step.name, 
           status: 'failed', 
@@ -263,7 +248,7 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
           validationErrors: e.message.includes('Validation errors occurred') ? e.message.split('\n').slice(1) : undefined
         });
         overallStatus = 'failed';
-        break; // Stop execution after first failure
+        break;
       }
     }
   } catch (e: any) {
@@ -280,6 +265,18 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
     steps: stepResults 
   };
 };
+
+// Function to take screenshots
+async function takeScreenshot(page: Page, name: string) {
+  const screenshotPath = path.join(process.cwd(), 'screenshots');
+  if (!fs.existsSync(screenshotPath)) {
+    fs.mkdirSync(screenshotPath);
+  }
+  await page.screenshot({ 
+    path: path.join(screenshotPath, `${name}.png`),
+    fullPage: true 
+  });
+}
 
 // Run all tests
 const runTests = async () => {
