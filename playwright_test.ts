@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { chromium, Browser, Page } from 'playwright';
+import path from 'path';
 
-// Test configuration interfaces
 interface TestObject {
   id: number;
   testName: string;
@@ -36,46 +36,10 @@ interface TestResult {
 interface StepResult {
   name: string;
   status: 'passed' | 'failed';
-  content?: string;
   error?: string;
 }
 
-// Validation helper functions
-const isInteger = (value: string): boolean => {
-  const parsed = parseInt(value, 10);
-  return !isNaN(parsed) && Number.isInteger(parsed);
-};
-
-const isNumeric = (value: string): boolean => {
-  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value));
-};
-
-const validateContent = (
-  content: string,
-  validation: 'string' | 'integer' | 'numeric' | 'regex',
-  pattern?: string | RegExp
-): boolean => {
-  switch (validation) {
-    case 'string':
-      return typeof content === 'string';
-    case 'integer':
-      return isInteger(content);
-    case 'numeric':
-      return isNumeric(content);
-    case 'regex':
-      if (pattern instanceof RegExp) {
-        return pattern.test(content);
-      } else if (typeof pattern === 'string') {
-        const regex = new RegExp(pattern);
-        return regex.test(content);
-      }
-      return false;
-    default:
-      return false;
-  }
-};
-
-// Load JSON test file
+// Load JSON test files dynamically
 const loadJsonArray = (filePath: string): TestObject => {
   try {
     const data = fs.readFileSync(filePath, 'utf8');
@@ -86,14 +50,14 @@ const loadJsonArray = (filePath: string): TestObject => {
   }
 };
 
-// Execute test logic
-const executeTest = async (testObject: TestObject, headless: boolean, testFiles: string[]): Promise<TestResult> => {
+// Function to run a single test
+const executeTest = async (testObject: TestObject): Promise<TestResult> => {
   let overallStatus: 'passed' | 'failed' = 'passed';
   const stepResults: StepResult[] = [];
-
+  
   console.log(`Starting test: ${testObject.testName}`);
 
-  const browser: Browser = await chromium.launch({ headless });
+  const browser: Browser = await chromium.launch({ headless: true });  // Always run headless
   const page: Page = await browser.newPage();
 
   try {
@@ -135,25 +99,25 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
   try {
     console.log(`Step: ${step.name} - Action: ${step.action}`);
 
-    let stepContent: string | undefined = undefined;
-
     if (step.action === 'click' && step.object) {
       console.log(`Clicking on object: ${step.object}`);
       await page.click(step.object);
       for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
         try {
+          if (typeof selector !== 'string') {
+            throw new Error(`Expected a string selector, but got: ${typeof selector}`);
+          }
           console.log(`Waiting for selector: ${selector}`);
           await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
           const element = page.locator(selector);
-          const textContent = await element.textContent();
-          stepContent = textContent !== null ? textContent : undefined;
+          const stepContent = await element.textContent();
           if (stepContent === null) {
             throw new Error(`Element ${selector} not found or has no text content.`);
           }
-          if (validation && stepContent !== undefined && (typeof expectedContent === 'function' ? !expectedContent(stepContent) : !validateContent(stepContent, validation, expectedContent))) {
+          if (validation && !validateContent(stepContent, validation, expectedContent)) {
             throw new Error(`Content in element ${selector} does not match expected validation.`);
           }
-        } catch (e: any) {
+        } catch (e) {
           console.error(`Failed to validate selector: ${selector}`, e);
           stepResults.push({ name: step.name, status: 'failed', error: e.message });
           return 'failed';
@@ -166,18 +130,20 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
       await page.goto(step.url, { waitUntil: 'networkidle' });
       for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
         try {
+          if (typeof selector !== 'string') {
+            throw new Error(`Expected a string selector, but got: ${typeof selector}`);
+          }
           console.log(`Waiting for selector: ${selector}`);
           await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
           const element = page.locator(selector);
-          const textContent = await element.textContent();
-          stepContent = textContent !== null ? textContent : undefined;
+          const stepContent = await element.textContent();
           if (stepContent === null) {
             throw new Error(`Element ${selector} not found or has no text content.`);
           }
-          if (validation && stepContent !== undefined && (typeof expectedContent === 'function' ? !expectedContent(stepContent) : !validateContent(stepContent, validation, expectedContent))) {
+          if (validation && !validateContent(stepContent, validation, expectedContent)) {
             throw new Error(`Content in element ${selector} does not match expected validation.`);
           }
-        } catch (e: any) {
+        } catch (e) {
           console.error(`Failed to validate selector: ${selector}`, e);
           stepResults.push({ name: step.name, status: 'failed', error: e.message });
           return 'failed';
@@ -185,41 +151,27 @@ const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Pr
       }
     }
 
-    if (step.action === 'input' && step.object && step.input) {
-      console.log(`Filling input for object: ${step.object} with value: ${step.input}`);
-      await page.fill(step.object, step.input);
-    }
-
-    stepResults.push({ name: step.name, status: 'passed', content: stepContent });
     return 'passed';
-  } catch (e: any) {
+  } catch (e) {
     console.error(`Error in step ${step.name}:`, e);
     stepResults.push({ name: step.name, status: 'failed', error: e.message });
     return 'failed';
   }
 };
 
+// Iterate through all test files in the tests folder
 const runTests = async () => {
-  const args = process.argv.slice(2);
-
-  // Hardcoding headless to true
-  const headless = true;  // Set to true for headless mode
-
-  const testFiles = args.filter(arg => !arg.startsWith('--headless'));  // Extract test files from arguments
-  if (testFiles.length === 0) {
-    console.log('No test files provided. Exiting...');
-    return;
-  }
-
+  const testFiles = fs.readdirSync(path.join(__dirname, 'tests')).filter(file => file.endsWith('.json'));
   const testResults: TestResult[] = [];
 
-  for (const jsonFile of testFiles) {
-    const testObject = loadJsonArray(jsonFile);
-    console.log(`Running test from ${jsonFile}:`);
-    const result = await executeTest(testObject, headless, testFiles);
+  for (const file of testFiles) {
+    const filePath = path.join(__dirname, 'tests', file);
+    const testObject = loadJsonArray(filePath);
+    console.log(`Running test from ${filePath}:`);
+    const result = await executeTest(testObject);
     testResults.push(result);
 
-    const resultFileName = `${jsonFile.replace('.json', '')}-results.json`;
+    const resultFileName = `${file.replace('.json', '')}-results.json`;
     fs.writeFileSync(resultFileName, JSON.stringify(result, null, 2), 'utf8');
     console.log(`Test results saved to ${resultFileName}`);
   }
