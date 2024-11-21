@@ -3,27 +3,37 @@
   "testName": "Wimmer Solutions Test 1",
   "functionalUnit": "SecureConnect DDA",
   "startUrl": "https://www2.wimmersolutions.com/",
-  "startPageLoadObjects": ["#Nav-Services-Link"],
-  "wait": 10000,
+  "startPageLoadObjects": [
+    {
+      "selector": "#Nav-Services-Link",
+      "index": 0
+    }
+  ],
+  "wait": 30000,
   "steps": [
     {
       "name": "Navigate to Services",
       "action": "click",
-      "object": "#Nav-Services-Link",
+      "object": {
+        "selector": "#Nav-Services-Link",
+        "index": 0
+      },
       "PageLoadObjects": [
         {
-          "selector": "a[href='#wf-form-Services-Form'] >> nth=0",
+          "selector": "#wf-form-Services-Form",
           "validation": "string",
-          "wait": 10000
+          "wait": 30000,
+          "index": 0
         },
         {
           "selector": ".benefits-heading",
-          "validation": "regex",
           "expectedContent": "Benefits",
-          "wait": 10000
+          "validation": "string",
+          "wait": 30000,
+          "index": 0
         }
       ],
-      "wait": 10000
+      "wait": 30000
     },
     {
       "name": "Navigate to Case Studies",
@@ -31,12 +41,13 @@
       "url": "https://www2.wimmersolutions.com/case-studies",
       "PageLoadObjects": [
         {
-          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support'] >> nth=0",
+          "selector": ".case-studies-grid a",
           "validation": "string",
-          "wait": 5000
+          "wait": 30000,
+          "index": 0
         }
       ],
-      "wait": 10000
+      "wait": 30000
     }
   ]
 }

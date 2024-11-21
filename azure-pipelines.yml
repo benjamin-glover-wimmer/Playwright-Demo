@@ -7,13 +7,12 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  testFiles: "tests/test1.json"  # Add your test files here
-  headless: "true"  # Set to 'true' for headless mode, 'false' for non-headless
+  testFiles: "tests/test1.json"  
 
 steps:
-- task: NodeTool@0 
+- task: NodeTool@0
   inputs:
-    versionSpec: '18.x'  
+    versionSpec: '18.x'
   displayName: 'Set up Node.js'
 
 - checkout: self
@@ -32,9 +31,11 @@ steps:
     npm install -D typescript@latest
     npm install -D playwright@latest
     npm install -D @types/node@latest
-    npx playwright install-deps
-    npx playwright install
   displayName: 'Install Playwright and TypeScript'
+
+- script: |
+    npx playwright install
+  displayName: 'Install Playwright Browsers'
 
 - script: |
     npx tsc --noEmit
@@ -42,18 +43,18 @@ steps:
 
 - script: |
     echo "Running tests..."
-    node dist/playwright_test.js $(testFiles) --headless=$(headless)
+    node dist/playwright_test.js $(testFiles)  
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'test-results.json'
+    PathtoPublish: '**/test*-results.json'  
     ArtifactName: 'test-results-json'
-  condition: succeededOrFailed()
+  condition: succeededOrFailed() 
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: 'screenshots'
+    PathtoPublish: 'screenshots'  
     ArtifactName: 'test-screenshots'
-  condition: succeededOrFailed()
+  condition: succeededOrFailed() 
