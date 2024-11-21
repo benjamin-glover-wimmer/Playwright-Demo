@@ -2,6 +2,7 @@ import fs from 'fs';
 import { chromium, Browser, Page } from 'playwright';
 import path from 'path';
 
+// Interfaces
 interface TestObject {
   id: number;
   testName: string;
@@ -38,6 +39,41 @@ interface StepResult {
   status: 'passed' | 'failed';
   error?: string;
 }
+
+// Validation Functions
+const isInteger = (value: string): boolean => {
+  const parsed = parseInt(value, 10);
+  return !isNaN(parsed) && Number.isInteger(parsed);
+};
+
+const isNumeric = (value: string): boolean => {
+  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value));
+};
+
+const validateContent = (
+  content: string,
+  validation: 'string' | 'integer' | 'numeric' | 'regex',
+  pattern?: string | RegExp
+): boolean => {
+  switch (validation) {
+    case 'string':
+      return typeof content === 'string';
+    case 'integer':
+      return isInteger(content);
+    case 'numeric':
+      return isNumeric(content);
+    case 'regex':
+      if (pattern instanceof RegExp) {
+        return pattern.test(content);
+      } else if (typeof pattern === 'string') {
+        const regex = new RegExp(pattern);
+        return regex.test(content);
+      }
+      return false;
+    default:
+      return false;
+  }
+};
 
 // Load JSON test files dynamically
 const loadJsonArray = (filePath: string): TestObject => {
