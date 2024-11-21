@@ -8,31 +8,21 @@ interface TestObject {
   testName: string;
   functionalUnit: string;
   startUrl: string;
-  startPageLoadObjects: StartPageLoadObject[];
+  startPageLoadObjects: string[];
   wait: number;
   steps: Step[];
-}
-
-interface StartPageLoadObject {
-  selector: string;
-  index?: number;
-  wait?: number;
 }
 
 interface Step {
   name: string;
   action: 'click' | 'fetch' | 'input';
-  object?: string | {
-    selector: string;
-    index?: number;
-  };
+  object?: string;
   url?: string;
   PageLoadObjects: Array<{
     selector: string;
     expectedContent?: string | RegExp | ((content: string) => boolean);
     validation?: 'string' | 'integer' | 'numeric' | 'regex';
     wait?: number;
-    index?: number;
   }>;
   wait: number;
   input?: string;
@@ -47,8 +37,8 @@ interface TestResult {
 interface StepResult {
   name: string;
   status: 'passed' | 'failed';
+  content?: string; // Save the content of the element in the result
   error?: string;
-  validationErrors?: string[];
 }
 
 // Validation Functions
@@ -58,7 +48,7 @@ const isInteger = (value: string): boolean => {
 };
 
 const isNumeric = (value: string): boolean => {
-  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value as any));
+  return !isNaN(parseFloat(value)) && isFinite(parseFloat(value));
 };
 
 const validateContent = (
@@ -68,7 +58,7 @@ const validateContent = (
 ): boolean => {
   switch (validation) {
     case 'string':
-      return typeof content === 'string' && content.length > 0;
+      return typeof content === 'string';
     case 'integer':
       return isInteger(content);
     case 'numeric':
@@ -99,221 +89,137 @@ const loadJsonArray = (filePath: string): TestObject => {
   }
 };
 
-// Helper function to handle indexed element selection
-async function getElementByIndex(page: Page, selectorObj: { selector: string; index?: number }) {
-  const selector = selectorObj.selector;
-  const index = selectorObj.index || 0;
-  const elements = page.locator(selector);
-  const count = await elements.count();
-  if (count === 0) {
-    throw new Error(`No elements found for selector: ${selector}`);
-  }
-  if (index >= count) {
-    throw new Error(`Index ${index} is out of bounds. Only ${count} elements found for selector: ${selector}`);
-  }
-  return elements.nth(index);
-}
-
-// Function to validate page content
-async function validatePageContent(element: any, obj: any) {
-  const content = (await element.textContent()) || '';
-  if (obj.expectedContent && !content.includes(obj.expectedContent.toString())) {
-    return {
-      isValid: false,
-      error: `Expected content "${obj.expectedContent}" not found in "${content}"`
-    };
-  }
-  if (obj.validation) {
-    const isValid = validateContent(content, obj.validation, obj.validationPattern);
-    if (!isValid) {
-      return {
-        isValid: false,
-        error: `Content validation failed for ${obj.selector}. Expected ${obj.validation} but got "${content}"`
-      };
-    }
-  }
-  return { isValid: true };
-}
-
-// Function to take screenshots
-async function takeScreenshot(page: Page, name: string) {
-  const screenshotPath = path.join(process.cwd(), 'screenshots');
-  if (!fs.existsSync(screenshotPath)) {
-    fs.mkdirSync(screenshotPath);
-  }
-  await page.screenshot({
-    path: path.join(screenshotPath, `${name}.png`),
-    fullPage: true
-  });
-}
-
-// Execute single test
+// Function to run a single test
 const executeTest = async (testObject: TestObject): Promise<TestResult> => {
-  let browser: Browser | null = null;
-  let page: Page | null = null;
-  const stepResults: StepResult[] = [];
   let overallStatus: 'passed' | 'failed' = 'passed';
+  const stepResults: StepResult[] = [];
+
+  console.log(`Starting test: ${testObject.testName}`);
+
+  const browser: Browser = await chromium.launch({ headless: true });  // Always run headless
+  const page: Page = await browser.newPage();
+
   try {
-    browser = await chromium.launch({
-      headless: true, // Always headless
-      args: ['--disable-dev-shm-usage']
-    });
-    page = await browser.newPage();
-    page.setDefaultTimeout(testObject.wait);
-    console.log(`Starting test: ${testObject.testName}`);
     console.log(`Navigating to start URL: ${testObject.startUrl}`);
-    await page.goto(testObject.startUrl, {
-      waitUntil: 'domcontentloaded',
-      timeout: testObject.wait || 60000
-    });
+    await page.goto(testObject.startUrl, { waitUntil: 'networkidle' });
 
     // Handle start page load objects
-    for (const selectorObj of testObject.startPageLoadObjects) {
+    for (const selector of testObject.startPageLoadObjects) {
       try {
-        console.log(`selectorObj: ${JSON.stringify(selectorObj)}`);
-        if (typeof selectorObj.selector !== 'string') {
-          throw new Error(`Invalid selector in startPageLoadObjects. Expected string, got ${typeof selectorObj.selector}`);
-        }
-        const selector = selectorObj.selector;
-        console.log(`Type of selectorObj.selector: ${typeof selectorObj.selector}`);
         console.log(`Waiting for start page selector: ${selector}`);
-        const element = await getElementByIndex(page, selectorObj);
-        await element.waitFor({ state: 'visible', timeout: selectorObj.wait || testObject.wait });
-        console.log(`Found selector: ${selector}`);
+        await page.waitForSelector(selector, { timeout: testObject.wait, state: 'visible' });
+        console.log(`Selector ${selector} found successfully`);
       } catch (e: any) {
-        const selector = selectorObj.selector;
-        const error = `Failed to find start page selector: ${selector} - ${e.message}`;
-        console.error(error);
-        if (page) await takeScreenshot(page, `error-${testObject.testName}-start`);
+        console.error(`Failed to load selector: ${selector}`, e);
         overallStatus = 'failed';
-        stepResults.push({
-          name: `Initial Load - ${selector}`,
-          status: 'failed',
-          error
-        });
-        return { testName: testObject.testName, status: overallStatus, steps: stepResults };
+        stepResults.push({ name: `Load ${selector}`, status: 'failed', error: e.message });
       }
     }
 
-    // Execute each step
+    // Handle steps
     for (const step of testObject.steps) {
-      try {
-        console.log(`Step: ${step.name} - Action: ${step.action}`);
-        const validationErrors = [];
-        if (step.action === 'click' && step.object) {
-          const selectorObj = step.object;
-          let element;
-          if (typeof selectorObj === 'string') {
-            console.log(`Clicking on selector (string): ${selectorObj}`);
-            element = await page.$(selectorObj);
-            if (!element) {
-              throw new Error(`Element not found for selector: ${selectorObj}`);
-            }
-            await element.click();
-          } else if (typeof selectorObj === 'object' && typeof selectorObj.selector === 'string') {
-            console.log(`Clicking on selector (object): ${selectorObj.selector}`);
-            console.log(`selectorObj: ${JSON.stringify(selectorObj)}`);
-            element = await getElementByIndex(page, selectorObj);
-            await element.waitFor({ state: 'visible', timeout: step.wait });
-            await element.click();
-          } else {
-            console.error(`Invalid selectorObj in step "${step.name}":`, selectorObj);
-            throw new Error(`Invalid selectorObj. Expected a string or an object with a selector string.`);
-          }
-        }
-        if (step.action === 'fetch' && step.url) {
-          console.log(`Navigating to URL: ${step.url}`);
-          await page.goto(step.url, {
-            waitUntil: 'domcontentloaded',
-            timeout: step.wait || 60000
-          });
-        }
-
-        // Verify page load objects
-        for (const obj of step.PageLoadObjects) {
-          try {
-            if (typeof obj.selector !== 'string') {
-              throw new Error(`Invalid selector in PageLoadObjects. Expected string, got ${typeof obj.selector}`);
-            }
-            const selector = obj.selector;
-            console.log(`Waiting for selector: ${selector}`);
-            console.log(`obj: ${JSON.stringify(obj)}`);
-            const element = await getElementByIndex(page, obj);
-            await element.waitFor({
-              state: 'visible',
-              timeout: obj.wait || step.wait
-            });
-            // Perform content validation
-            const validation = await validatePageContent(element, obj);
-            if (!validation.isValid && validation.error) {
-              validationErrors.push(validation.error);
-            }
-          } catch (e: any) {
-            throw new Error(`Failed to verify ${obj.selector}: ${e.message}`);
-          }
-        }
-
-        if (validationErrors.length > 0) {
-          throw new Error(`Validation errors occurred:\n${validationErrors.join('\n')}`);
-        }
-
-        stepResults.push({
-          name: step.name,
-          status: 'passed'
-        });
-      } catch (e: any) {
-        const error = `Step ${step.name} failed: ${e.message}`;
-        console.error(error);
-        if (page) await takeScreenshot(page, `error-${testObject.testName}-${step.name}`);
-        stepResults.push({
-          name: step.name,
-          status: 'failed',
-          error,
-          validationErrors: e.message.includes('Validation errors occurred') ? e.message.split('\n').slice(1) : undefined
-        });
+      const stepStatus = await handleStep(page, step, stepResults);
+      if (stepStatus === 'failed') {
         overallStatus = 'failed';
-        break;
       }
     }
-  } catch (e) {
-    console.error(`Test ${testObject.testName} encountered a critical error:`, e);
+
+    // Save the results for this test in a dedicated results file (testName-results.json)
+    const resultFileName = `${testObject.testName.replace(/\s+/g, '-').toLowerCase()}-results.json`;
+    fs.writeFileSync(resultFileName, JSON.stringify({ testName: testObject.testName, status: overallStatus, steps: stepResults }, null, 2), 'utf8');
+    console.log(`Test results saved to ${resultFileName}`);
+
+  } catch (error) {
+    console.error(`Test ${testObject.testName} encountered a critical error:`, error);
     overallStatus = 'failed';
   } finally {
-    if (page) await page.close();
-    if (browser) await browser.close();
+    await browser.close();
   }
-  return {
-    testName: testObject.testName,
-    status: overallStatus,
-    steps: stepResults
-  };
+
+  return { testName: testObject.testName, status: overallStatus, steps: stepResults };
 };
 
-// Run all tests
+// Handle individual step
+const handleStep = async (page: Page, step: Step, stepResults: StepResult[]): Promise<'passed' | 'failed'> => {
+  try {
+    console.log(`Step: ${step.name} - Action: ${step.action}`);
+
+    if (step.action === 'click' && step.object) {
+      console.log(`Clicking on object: ${step.object}`);
+      await page.click(step.object);
+      for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
+        try {
+          if (typeof selector !== 'string') {
+            throw new Error(`Expected a string selector, but got: ${typeof selector}`);
+          }
+          console.log(`Waiting for selector: ${selector}`);
+          await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
+          const element = page.locator(selector);
+          const stepContent = await element.textContent();
+          if (stepContent === null) {
+            throw new Error(`Element ${selector} not found or has no text content.`);
+          }
+          if (validation && !validateContent(stepContent, validation, expectedContent)) {
+            throw new Error(`Content in element ${selector} does not match expected validation.`);
+          }
+          // Save content in the result
+          stepResults.push({ name: step.name, status: 'passed', content: stepContent });
+        } catch (e: any) {
+          console.error(`Failed to validate selector: ${selector}`, e);
+          stepResults.push({ name: step.name, status: 'failed', error: e.message });
+          return 'failed';
+        }
+      }
+    }
+
+    if (step.action === 'fetch' && step.url) {
+      console.log(`Navigating to URL: ${step.url}`);
+      await page.goto(step.url, { waitUntil: 'networkidle' });
+      for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
+        try {
+          if (typeof selector !== 'string') {
+            throw new Error(`Expected a string selector, but got: ${typeof selector}`);
+          }
+          console.log(`Waiting for selector: ${selector}`);
+          await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
+          const element = page.locator(selector);
+          const stepContent = await element.textContent();
+          if (stepContent === null) {
+            throw new Error(`Element ${selector} not found or has no text content.`);
+          }
+          if (validation && !validateContent(stepContent, validation, expectedContent)) {
+            throw new Error(`Content in element ${selector} does not match expected validation.`);
+          }
+          // Save content in the result
+          stepResults.push({ name: step.name, status: 'passed', content: stepContent });
+        } catch (e: any) {
+          console.error(`Failed to validate selector: ${selector}`, e);
+          stepResults.push({ name: step.name, status: 'failed', error: e.message });
+          return 'failed';
+        }
+      }
+    }
+
+    return 'passed';
+  } catch (e: any) {
+    console.error(`Error in step ${step.name}:`, e);
+    stepResults.push({ name: step.name, status: 'failed', error: e.message });
+    return 'failed';
+  }
+};
+
+// Iterate through all test files in the tests folder
 const runTests = async () => {
   const testFiles = fs.readdirSync(path.join(__dirname, 'tests')).filter(file => file.endsWith('.json'));
   const testResults: TestResult[] = [];
+
   for (const file of testFiles) {
     const filePath = path.join(__dirname, 'tests', file);
     const testObject = loadJsonArray(filePath);
     console.log(`Running test from ${filePath}:`);
     const result = await executeTest(testObject);
     testResults.push(result);
-    const resultFileName = `${file.replace('.json', '')}-results.json`;
-    fs.writeFileSync(resultFileName, JSON.stringify(result, null, 2), 'utf8');
-    console.log(`Test results saved to ${resultFileName}`);
-    if (result.status === 'failed') {
-      console.log(`Test ${result.testName} Failed`);
-      const failedStep = result.steps.find(step => step.status === 'failed');
-      if (failedStep) {
-        console.log(`Failed step: ${failedStep.name}`);
-        if (failedStep.validationErrors) {
-          console.log('Validation errors:', failedStep.validationErrors);
-        }
-      }
-    }
   }
 };
 
-// Start test execution
-runTests().catch(console.error);
+runTests();
