@@ -8,7 +8,11 @@ interface TestObject {
   testName: string;
   functionalUnit: string;
   startUrl: string;
-  startPageLoadObjects: string[];
+  startPageLoadObjects: Array<{
+    selector: string;
+    index?: number;
+    wait?: number;
+  }>;
   wait: number;
   steps: Step[];
 }
@@ -16,13 +20,17 @@ interface TestObject {
 interface Step {
   name: string;
   action: 'click' | 'fetch' | 'input';
-  object?: string;
+  object?: string | {
+    selector: string;
+    index?: number;
+  };
   url?: string;
   PageLoadObjects: Array<{
     selector: string;
     expectedContent?: string | RegExp | ((content: string) => boolean);
     validation?: 'string' | 'integer' | 'numeric' | 'regex';
     wait?: number;
+    index?: number;
   }>;
   wait: number;
   input?: string;
@@ -54,7 +62,7 @@ const isNumeric = (value: string): boolean => {
 const validateContent = (
   content: string,
   validation: 'string' | 'integer' | 'numeric' | 'regex',
-  pattern?: string | RegExp
+  pattern?: string | RegExp | ((content: string) => boolean)
 ): boolean => {
   switch (validation) {
     case 'string':
@@ -70,7 +78,7 @@ const validateContent = (
         const regex = new RegExp(pattern);
         return regex.test(content);
       } else if (typeof pattern === 'function') {
-        return (pattern as (content: string) => boolean)(content);
+        return pattern(content);
       }
       return false;
     default:
@@ -89,18 +97,10 @@ const loadJsonArray = (filePath: string): TestObject => {
   }
 };
 
-// Helper function to get selector string from object or string
-function getSelectorString(selectorObj: string | { selector: string }) {
-  if (typeof selectorObj === 'string') {
-    return selectorObj;
-  }
-  return selectorObj.selector;
-}
-
 // Helper function to handle indexed element selection
 async function getElementByIndex(page: Page, selectorObj: { selector: string; index?: number }) {
-  const selector = getSelectorString(selectorObj);
-  const index = typeof selectorObj === 'object' ? selectorObj.index || 0 : 0;
+  const selector = selectorObj.selector;
+  const index = selectorObj.index || 0;
   const elements = page.locator(selector);
   const count = await elements.count();
   if (count === 0) {
@@ -114,7 +114,7 @@ async function getElementByIndex(page: Page, selectorObj: { selector: string; in
 
 // Function to validate page content
 async function validatePageContent(element: any, obj: any) {
-  const content = await element.textContent() || '';
+  const content = (await element.textContent()) || '';
   if (obj.expectedContent && !content.includes(obj.expectedContent.toString())) {
     return {
       isValid: false,
@@ -147,13 +147,13 @@ async function takeScreenshot(page: Page, name: string) {
 
 // Execute single test
 const executeTest = async (testObject: TestObject): Promise<TestResult> => {
-  let browser = null;
-  let page = null;
+  let browser: Browser | null = null;
+  let page: Page | null = null;
   const stepResults: StepResult[] = [];
   let overallStatus: 'passed' | 'failed' = 'passed';
   try {
     browser = await chromium.launch({
-      headless: true,  // Always headless
+      headless: true, // Always headless
       args: ['--disable-dev-shm-usage']
     });
     page = await browser.newPage();
@@ -161,20 +161,20 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
     console.log(`Starting test: ${testObject.testName}`);
     console.log(`Navigating to start URL: ${testObject.startUrl}`);
     await page.goto(testObject.startUrl, {
-      waitUntil: 'networkidle',
-      timeout: testObject.wait
+      waitUntil: 'domcontentloaded',
+      timeout: testObject.wait || 60000
     });
 
     // Handle start page load objects
     for (const selectorObj of testObject.startPageLoadObjects) {
       try {
-        const selector = getSelectorString(selectorObj);
+        const selector = selectorObj.selector;
         console.log(`Waiting for start page selector: ${selector}`);
-        const element = await getElementByIndex(page, { selector: getSelectorString(selectorObj) });
-        await element.waitFor({ state: 'visible', timeout: testObject.wait });
+        const element = await getElementByIndex(page, selectorObj);
+        await element.waitFor({ state: 'visible', timeout: selectorObj.wait || testObject.wait });
         console.log(`Found selector: ${selector}`);
-      } catch (e:any) {
-        const selector = getSelectorString(selectorObj);
+      } catch (e: any) {
+        const selector = selectorObj.selector;
         const error = `Failed to find start page selector: ${selector} - ${e.message}`;
         console.error(error);
         if (page) await takeScreenshot(page, `error-${testObject.testName}-start`);
@@ -194,24 +194,34 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
         console.log(`Step: ${step.name} - Action: ${step.action}`);
         const validationErrors = [];
         if (step.action === 'click' && step.object) {
-          const selector = getSelectorString(step.object);
-          console.log(`Clicking on selector: ${selector}`);
-          const element = await getElementByIndex(page, { selector: getSelectorString(step.object) });
-          await element.waitFor({ state: 'visible', timeout: step.wait });
-          await element.click();
+          const selectorObj = step.object;
+          let element;
+          if (typeof selectorObj === 'string') {
+            console.log(`Clicking on selector: ${selectorObj}`);
+            element = await page.$(selectorObj);
+            if (!element) {
+              throw new Error(`Element not found for selector: ${selectorObj}`);
+            }
+            await element.click();
+          } else {
+            console.log(`Clicking on selector: ${selectorObj.selector}`);
+            element = await getElementByIndex(page, selectorObj);
+            await element.waitFor({ state: 'visible', timeout: step.wait });
+            await element.click();
+          }
         }
         if (step.action === 'fetch' && step.url) {
           console.log(`Navigating to URL: ${step.url}`);
           await page.goto(step.url, {
-            waitUntil: 'networkidle',
-            timeout: step.wait
+            waitUntil: 'domcontentloaded',
+            timeout: step.wait || 60000
           });
         }
 
         // Verify page load objects
         for (const obj of step.PageLoadObjects) {
           try {
-            const selector = getSelectorString(obj);
+            const selector = obj.selector;
             console.log(`Waiting for selector: ${selector}`);
             const element = await getElementByIndex(page, obj);
             await element.waitFor({
@@ -223,7 +233,7 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
             if (!validation.isValid && validation.error) {
               validationErrors.push(validation.error);
             }
-          } catch (e:any) {
+          } catch (e: any) {
             throw new Error(`Failed to verify ${obj.selector}: ${e.message}`);
           }
         }
@@ -236,7 +246,7 @@ const executeTest = async (testObject: TestObject): Promise<TestResult> => {
           name: step.name,
           status: 'passed'
         });
-      } catch (e:any) {
+      } catch (e: any) {
         const error = `Step ${step.name} failed: ${e.message}`;
         console.error(error);
         if (page) await takeScreenshot(page, `error-${testObject.testName}-${step.name}`);
