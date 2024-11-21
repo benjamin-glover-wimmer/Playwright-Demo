@@ -38,6 +38,23 @@ const validateContent = (content, validation, pattern) => {
             return false;
     }
 };
+// Handle selector with optional index
+const handleSelector = async (page, selectorObj) => {
+    const { selector, index = 0 } = selectorObj;
+    // Locate the element by the selector
+    const elements = page.locator(selector);
+    const count = await elements.count();
+    if (count === 0) {
+        throw new Error(`No elements found for selector: ${selector}`);
+    }
+    if (index >= count) {
+        throw new Error(`Index ${index} is out of bounds. Only ${count} elements found for selector: ${selector}`);
+    }
+    const element = elements.nth(index);
+    // Wait for the element to be visible
+    console.log(`Waiting for element: ${selector} (index ${index})`);
+    await element.waitFor({ state: 'visible' });
+};
 // Load JSON test files dynamically
 const loadJsonArray = (filePath) => {
     try {
@@ -60,16 +77,16 @@ const executeTest = async (testObject) => {
         console.log(`Navigating to start URL: ${testObject.startUrl}`);
         await page.goto(testObject.startUrl, { waitUntil: 'networkidle' });
         // Handle start page load objects
-        for (const selector of testObject.startPageLoadObjects) {
+        for (const selectorObj of testObject.startPageLoadObjects) {
             try {
-                console.log(`Waiting for start page selector: ${selector}`);
-                await page.waitForSelector(selector, { timeout: testObject.wait, state: 'visible' });
-                console.log(`Selector ${selector} found successfully`);
+                console.log(`Waiting for start page selector: ${selectorObj.selector}`);
+                await handleSelector(page, selectorObj);
+                console.log(`Selector ${selectorObj.selector} found successfully`);
             }
             catch (e) {
-                console.error(`Failed to load selector: ${selector}`, e);
+                console.error(`Failed to load selector: ${selectorObj.selector}`, e);
                 overallStatus = 'failed';
-                stepResults.push({ name: `Load ${selector}`, status: 'failed', error: e.message });
+                stepResults.push({ name: `Load ${selectorObj.selector}`, status: 'failed', error: e.message });
             }
         }
         // Handle steps
@@ -98,28 +115,27 @@ const handleStep = async (page, step, stepResults) => {
     try {
         console.log(`Step: ${step.name} - Action: ${step.action}`);
         if (step.action === 'click' && step.object) {
-            console.log(`Clicking on object: ${step.object}`);
-            await page.click(step.object);
-            for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
+            console.log(`Clicking on object: ${step.object.selector}`);
+            await page.click(step.object.selector);
+            // Wait for the page to load completely after clicking
+            await page.waitForLoadState('load'); // Wait until the load state is 'load' after the click
+            for (const selectorObj of step.PageLoadObjects) {
                 try {
-                    if (typeof selector !== 'string') {
-                        throw new Error(`Expected a string selector, but got: ${typeof selector}`);
-                    }
-                    console.log(`Waiting for selector: ${selector}`);
-                    await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
-                    const element = page.locator(selector);
+                    console.log(`Waiting for selector: ${selectorObj.selector}`);
+                    await handleSelector(page, selectorObj);
+                    const element = page.locator(selectorObj.selector);
                     const stepContent = await element.textContent();
                     if (stepContent === null) {
-                        throw new Error(`Element ${selector} not found or has no text content.`);
+                        throw new Error(`Element ${selectorObj.selector} not found or has no text content.`);
                     }
-                    if (validation && !validateContent(stepContent, validation, expectedContent)) {
-                        throw new Error(`Content in element ${selector} does not match expected validation.`);
+                    if (selectorObj.validation && !validateContent(stepContent, selectorObj.validation, selectorObj.expectedContent)) {
+                        throw new Error(`Content in element ${selectorObj.selector} does not match expected validation.`);
                     }
                     // Save content in the result
                     stepResults.push({ name: step.name, status: 'passed', content: stepContent });
                 }
                 catch (e) {
-                    console.error(`Failed to validate selector: ${selector}`, e);
+                    console.error(`Failed to validate selector: ${selectorObj.selector}`, e);
                     stepResults.push({ name: step.name, status: 'failed', error: e.message });
                     return 'failed';
                 }
@@ -128,26 +144,23 @@ const handleStep = async (page, step, stepResults) => {
         if (step.action === 'fetch' && step.url) {
             console.log(`Navigating to URL: ${step.url}`);
             await page.goto(step.url, { waitUntil: 'networkidle' });
-            for (const { selector, expectedContent, validation, wait } of step.PageLoadObjects) {
+            for (const selectorObj of step.PageLoadObjects) {
                 try {
-                    if (typeof selector !== 'string') {
-                        throw new Error(`Expected a string selector, but got: ${typeof selector}`);
-                    }
-                    console.log(`Waiting for selector: ${selector}`);
-                    await page.waitForSelector(selector, { timeout: wait || step.wait, state: 'visible' });
-                    const element = page.locator(selector);
+                    console.log(`Waiting for selector: ${selectorObj.selector}`);
+                    await handleSelector(page, selectorObj);
+                    const element = page.locator(selectorObj.selector);
                     const stepContent = await element.textContent();
                     if (stepContent === null) {
-                        throw new Error(`Element ${selector} not found or has no text content.`);
+                        throw new Error(`Element ${selectorObj.selector} not found or has no text content.`);
                     }
-                    if (validation && !validateContent(stepContent, validation, expectedContent)) {
-                        throw new Error(`Content in element ${selector} does not match expected validation.`);
+                    if (selectorObj.validation && !validateContent(stepContent, selectorObj.validation, selectorObj.expectedContent)) {
+                        throw new Error(`Content in element ${selectorObj.selector} does not match expected validation.`);
                     }
                     // Save content in the result
                     stepResults.push({ name: step.name, status: 'passed', content: stepContent });
                 }
                 catch (e) {
-                    console.error(`Failed to validate selector: ${selector}`, e);
+                    console.error(`Failed to validate selector: ${selectorObj.selector}`, e);
                     stepResults.push({ name: step.name, status: 'failed', error: e.message });
                     return 'failed';
                 }

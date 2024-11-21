@@ -20,16 +20,16 @@
       },
       "PageLoadObjects": [
         {
-          "selector": "#wf-form-Services-Form",
+          "selector": "a[href='#wf-form-Services-Form'] >> nth=0",
           "validation": "string",
-          "wait": 30000,
+          "wait": 10000,
           "index": 0
         },
         {
           "selector": ".benefits-heading",
           "expectedContent": "Benefits",
           "validation": "string",
-          "wait": 30000,
+          "wait": 10000,
           "index": 0
         }
       ],
@@ -41,7 +41,7 @@
       "url": "https://www2.wimmersolutions.com/case-studies",
       "PageLoadObjects": [
         {
-          "selector": ".case-studies-grid a",
+          "selector": "a[href='/case-studies/international-software-company-end-to-end-tech-support'] >> nth=0",
           "validation": "string",
           "wait": 30000,
           "index": 0

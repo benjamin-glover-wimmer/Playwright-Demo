@@ -5,10 +5,10 @@
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true, 
-    "types": ["node"], 
-    "lib": ["ES2020", "DOM"] 
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["ES2020", "DOM"]
   },
-  "include": ["*.ts"],
+  "include": ["*.ts"],  // Include all .ts files in src and tests folders
   "exclude": ["node_modules"]
 }
