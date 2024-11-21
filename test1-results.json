@@ -1,0 +1,14 @@
+{
+  "testName": "Wimmer Solutions Test 1",
+  "status": "passed",
+  "steps": [
+    {
+      "name": "Navigate to Services",
+      "status": "passed"
+    },
+    {
+      "name": "Navigate to Case Studies",
+      "status": "passed"
+    }
+  ]
+}

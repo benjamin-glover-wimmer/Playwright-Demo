@@ -1,0 +1,21 @@
+{
+  "testName": "Wimmer Solutions Test 1",
+  "status": "passed",
+  "steps": [
+    {
+      "name": "Navigate to Services",
+      "status": "passed",
+      "content": "Talk to an Expert"
+    },
+    {
+      "name": "Navigate to Services",
+      "status": "passed",
+      "content": "Benefits of working with us"
+    },
+    {
+      "name": "Navigate to Case Studies",
+      "status": "passed",
+      "content": "Read case study"
+    }
+  ]
+}

@@ -6,6 +6,10 @@ trigger:
 pool:
   vmImage: 'windows-latest'
 
+variables:
+  testFiles: "tests/test1.json"  # Add your test files here
+  headless: "true"  # Set to 'true' for headless mode, 'false' for non-headless
+
 steps:
 - task: NodeTool@0 
   inputs:
@@ -37,9 +41,8 @@ steps:
   displayName: 'Validate TypeScript'
 
 - script: |
-    npx tsc 
-    export DEBUG=pw:api
-    npx playwright test --reporter=json --output=./
+    echo "Running tests..."
+    node dist/playwright_test.js $(testFiles) --headless=$(headless)
   displayName: 'Run Playwright Tests'
   continueOnError: true  
 
